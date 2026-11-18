@@ -18,7 +18,11 @@ class _Modelo(dict):
 
 
 def preencher(texto: str, dados: dict) -> str:
-    return texto.format_map(_Modelo(dados))
+    """Troca {variavel} e {variavel[campo]}. Se algo faltar, devolve o texto como esta, sem quebrar o fluxo."""
+    try:
+        return texto.format_map(_Modelo(dados))
+    except (KeyError, IndexError, ValueError, AttributeError, TypeError):
+        return texto
 
 
 def no_entrada(config: dict):
@@ -88,10 +92,32 @@ def no_aprovacao(config: dict):
     """Pausa o fluxo ate alguem aprovar ou recusar pela interface."""
     def executar(estado: Estado):
         dados = estado.get("dados", {})
-        decisao = interrupt({"pergunta": preencher(config.get("pergunta", "Aprovar?"), dados)})
+        decisao = interrupt({"tipo": "aprovacao", "pergunta": preencher(config.get("pergunta", "Aprovar?"), dados)})
         aprovado = bool(decisao.get("aprovado")) if isinstance(decisao, dict) else bool(decisao)
         return {"rota": "aprovado" if aprovado else "recusado",
                 "historico": ["aprovado" if aprovado else "recusado"]}
+
+    return executar
+
+
+def no_etapa_guiada(config: dict):
+    """Pausa e entrega a instrucao a quem conduz o fluxo (o Claude Code, com o usuario acompanhando)."""
+    def executar(estado: Estado):
+        dados = estado.get("dados", {})
+        resposta = interrupt({
+            "tipo": "etapa_guiada",
+            "titulo": preencher(config.get("titulo", "Etapa"), dados),
+            "instrucao": preencher(config["instrucao"], dados),
+            "campos": config.get("campos", []),
+        })
+        resposta = resposta if isinstance(resposta, dict) else {}
+        sucesso = bool(resposta.get("sucesso", True))
+        chave = config.get("chave", "etapa")
+        return {
+            "dados": {f"{chave}_resultado": resposta.get("resultado", {})},
+            "rota": "ok" if sucesso else "falha",
+            "historico": [f"{chave}: " + ("concluida" if sucesso else "falhou")],
+        }
 
     return executar
 
@@ -154,6 +180,7 @@ TIPOS: dict[str, Callable[[dict], Callable]] = {
     "comando": no_comando,
     "agente": no_agente,
     "aprovacao": no_aprovacao,
+    "etapa_guiada": no_etapa_guiada,
     "fim": no_fim,
     "git_preparar": no_git_preparar,
     "abrir_pr": no_abrir_pr,

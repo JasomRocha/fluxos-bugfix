@@ -25,10 +25,12 @@ class TiposDeNo extends Tool
                 'git_preparar' => ['config' => ['repositorio', 'branch (padrao correcao/{bug})', 'pasta_base'], 'grava' => ['diretorio', 'branch'], 'rotas' => []],
                 'agente' => ['config' => ['prompt', 'diretorio', 'modelo', 'max_turnos', 'insistencias', 'comandos_permitidos', 'chave'], 'rotas' => ['ok', 'limite', 'sem_alteracao']],
                 'comando' => ['config' => ['comando', 'diretorio', 'chave', 'limite_segundos'], 'grava' => ['<chave>_saida', '<chave>_codigo'], 'rotas' => ['ok', 'falha']],
+                'etapa_guiada' => ['config' => ['chave', 'titulo', 'instrucao', 'campos'], 'obs' => 'pausa e entrega a instrucao ao Claude Code; ele executa localmente e responde com concluir_etapa. O resultado fica em {chave}_resultado e pode ser usado como {chave_resultado[campo]}', 'rotas' => ['ok', 'falha']],
                 'aprovacao' => ['config' => ['pergunta'], 'obs' => 'pausa a execucao ate alguem decidir (decidir_execucao)', 'rotas' => ['aprovado', 'recusado']],
                 'abrir_pr' => ['config' => ['titulo', 'corpo'], 'grava' => ['pr_url'], 'rotas' => ['ok', 'sem_alteracao']],
                 'fim' => ['config' => [], 'rotas' => []],
             ],
+            'modelo_correcao_guiada' => \App\Support\Modelos::correcaoGuiada(),
         ]);
     }
 }

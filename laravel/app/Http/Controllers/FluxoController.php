@@ -67,27 +67,6 @@ class FluxoController extends Controller
 
     private function modelo(): array
     {
-        return [
-            'inicio' => 'entrada',
-            'nos' => [
-                ['id' => 'entrada', 'tipo' => 'entrada'],
-                ['id' => 'preparar', 'tipo' => 'git_preparar', 'config' => ['repositorio' => '{repositorio}']],
-                ['id' => 'corrigir', 'tipo' => 'agente', 'config' => ['prompt' => 'Corrija o bug: {descricao}', 'diretorio' => '{diretorio}']],
-                ['id' => 'testar', 'tipo' => 'comando', 'config' => ['comando' => '{comando_testes}', 'diretorio' => '{diretorio}', 'chave' => 'testes']],
-                ['id' => 'aprovar', 'tipo' => 'aprovacao', 'config' => ['pergunta' => 'Abrir o PR da correcao?']],
-                ['id' => 'pr', 'tipo' => 'abrir_pr'],
-                ['id' => 'fim', 'tipo' => 'fim'],
-            ],
-            'arestas' => [
-                ['de' => 'entrada', 'para' => 'preparar'],
-                ['de' => 'preparar', 'para' => 'corrigir'],
-                ['de' => 'corrigir', 'para' => 'testar'],
-                ['de' => 'testar', 'para' => 'aprovar', 'quando' => 'ok'],
-                ['de' => 'testar', 'para' => 'fim', 'quando' => 'falha'],
-                ['de' => 'aprovar', 'para' => 'pr', 'quando' => 'aprovado'],
-                ['de' => 'aprovar', 'para' => 'fim', 'quando' => 'recusado'],
-                ['de' => 'pr', 'para' => 'fim'],
-            ],
-        ];
+        return \App\Support\Modelos::correcaoGuiada();
     }
 }

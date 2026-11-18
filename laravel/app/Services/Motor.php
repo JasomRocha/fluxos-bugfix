@@ -27,6 +27,11 @@ class Motor
         return $this->http()->get("/execucoes/{$id}")->json();
     }
 
+    public function responder(string $id, bool $sucesso, array $resultado): array
+    {
+        return $this->http()->post("/execucoes/{$id}/resposta", ['sucesso' => $sucesso, 'resultado' => (object) $resultado])->json();
+    }
+
     public function decidir(string $id, bool $aprovado): array
     {
         return $this->http()->post("/execucoes/{$id}/decisao", ['aprovado' => $aprovado])->json();

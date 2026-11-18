@@ -55,16 +55,20 @@ class Servico:
         self._disparar(ex, fluxo, {"dados": dados, "historico": []}, assincrono)
         return ex
 
-    def retomar(self, ex_id: str, aprovado: bool, assincrono: bool = True) -> Execucao:
+    def retomar(self, ex_id: str, resposta: dict, tipo: str, assincrono: bool = True) -> Execucao:
+        """Retoma uma execucao pausada. O tipo evita aprovar quando se espera uma etapa, e vice-versa."""
         ex = self.obter(ex_id)
         if ex is None:
             raise KeyError(ex_id)
         if ex.status != "aguardando":
-            raise ValueError("execucao nao esta aguardando aprovacao")
+            raise ValueError("execucao nao esta aguardando")
+        esperado = (ex.pendencia or {}).get("tipo", "aprovacao")  # sem tipo = pendencia antiga
+        if esperado != tipo:
+            raise ValueError(f"a pendencia e do tipo '{esperado}', nao '{tipo}'")
         import json
         fluxo = Fluxo(**json.loads(self.repo.carregar(ex_id)[0]))
         ex.status, ex.pendencia = "executando", None
-        self._disparar(ex, fluxo, Command(resume={"aprovado": aprovado}), assincrono)
+        self._disparar(ex, fluxo, Command(resume=resposta), assincrono)
         return ex
 
     def _disparar(self, ex: Execucao, fluxo: Fluxo, entrada, assincrono: bool):

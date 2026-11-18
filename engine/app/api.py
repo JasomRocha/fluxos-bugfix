@@ -29,6 +29,11 @@ class Decisao(BaseModel):
     aprovado: bool
 
 
+class RespostaEtapa(BaseModel):
+    sucesso: bool = True
+    resultado: dict = {}
+
+
 def resumo(ex):
     return {"id": ex.id, "status": ex.status, "pendencia": ex.pendencia, "erro": ex.erro,
             "dados": ex.estado.get("dados", {}), "historico": ex.estado.get("historico", [])}
@@ -56,7 +61,18 @@ def consultar(ex_id: str, x_token: str | None = Header(default=None)):
 def decidir(ex_id: str, d: Decisao, x_token: str | None = Header(default=None)):
     autorizar(x_token)
     try:
-        return resumo(servico.retomar(ex_id, d.aprovado))
+        return resumo(servico.retomar(ex_id, {"aprovado": d.aprovado}, "aprovacao"))
+    except KeyError:
+        raise HTTPException(404, "execucao inexistente")
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+
+
+@app.post("/execucoes/{ex_id}/resposta")
+def responder(ex_id: str, r: RespostaEtapa, x_token: str | None = Header(default=None)):
+    autorizar(x_token)
+    try:
+        return resumo(servico.retomar(ex_id, {"sucesso": r.sucesso, "resultado": r.resultado}, "etapa_guiada"))
     except KeyError:
         raise HTTPException(404, "execucao inexistente")
     except ValueError as e:

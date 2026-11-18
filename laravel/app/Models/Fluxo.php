@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Fluxo extends Model
 {
-    public const TIPOS = ['entrada', 'git_preparar', 'agente', 'comando', 'aprovacao', 'abrir_pr', 'fim'];
+    public const TIPOS = ['entrada', 'git_preparar', 'agente', 'comando', 'aprovacao', 'etapa_guiada', 'abrir_pr', 'fim'];
 
     protected $table = 'fluxos';
 

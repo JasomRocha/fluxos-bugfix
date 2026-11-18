@@ -25,6 +25,14 @@ export const TIPOS = {
       { chave: 'chave', rotulo: 'Nome do resultado', dica: 'testes' },
     ],
   },
+  etapa_guiada: {
+    rotulo: 'Etapa guiada (Claude Code)',
+    campos: [
+      { chave: 'titulo', rotulo: 'Título', dica: 'Investigar o bug' },
+      { chave: 'instrucao', rotulo: 'Instrução', area: true, dica: 'O que o Claude Code deve fazer. Aceita {variavel} e {etapa_resultado[campo]}' },
+      { chave: 'chave', rotulo: 'Nome do resultado', dica: 'investigar' },
+    ],
+  },
   aprovacao: {
     rotulo: 'Aprovação',
     campos: [{ chave: 'pergunta', rotulo: 'Pergunta', area: true, dica: 'Abrir o PR?' }],
@@ -43,6 +51,7 @@ export const TIPOS = {
 export const ROTAS = {
   comando: ['ok', 'falha'],
   aprovacao: ['aprovado', 'recusado'],
+  etapa_guiada: ['ok', 'falha'],
   abrir_pr: ['ok', 'sem_alteracao'],
   agente: ['ok', 'limite', 'sem_alteracao'],
 };

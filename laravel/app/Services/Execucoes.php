@@ -31,12 +31,29 @@ class Execucoes
 
     public function decidir(Execucao $execucao, bool $aprovado): Execucao
     {
-        if ($execucao->status !== 'aguardando') {
-            throw new DomainException('A execucao nao aguarda decisao.');
-        }
+        $this->exigirPendencia($execucao, 'aprovacao', 'responder com concluir_etapa');
         $this->aplicar($execucao, $this->motor->decidir($execucao->motor_id, $aprovado));
 
         return $execucao;
+    }
+
+    public function responder(Execucao $execucao, bool $sucesso, array $resultado): Execucao
+    {
+        $this->exigirPendencia($execucao, 'etapa_guiada', 'decidir com decidir_execucao');
+        $this->aplicar($execucao, $this->motor->responder($execucao->motor_id, $sucesso, $resultado));
+
+        return $execucao;
+    }
+
+    private function exigirPendencia(Execucao $e, string $tipo, string $alternativa): void
+    {
+        if ($e->status !== 'aguardando') {
+            throw new DomainException('A execucao nao esta aguardando (status: '.$e->status.').');
+        }
+        $atual = $e->pendencia['tipo'] ?? 'aprovacao'; // sem tipo = pendencia antiga, sempre foi aprovacao
+        if ($atual !== $tipo) {
+            throw new DomainException("A pendencia desta execucao e do tipo '{$atual}'; para {$tipo} nao serve. Use: {$alternativa}.");
+        }
     }
 
     private function aplicar(Execucao $e, array $m): void

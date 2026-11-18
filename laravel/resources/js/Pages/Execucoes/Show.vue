@@ -22,7 +22,13 @@ const decidir = (aprovado) => router.post(`/execucoes/${props.execucao.id}/decis
     <Link :href="`/fluxos/${execucao.fluxo_id}`" class="text-sm text-slate-500 hover:underline">{{ execucao.fluxo?.nome }}</Link>
   </div>
 
-  <section v-if="execucao.status === 'aguardando'" class="mb-6 rounded border border-amber-300 bg-amber-50 p-4">
+  <section v-if="execucao.status === 'aguardando' && execucao.pendencia?.tipo === 'etapa_guiada'" class="mb-6 rounded border border-blue-300 bg-blue-50 p-4">
+    <p class="font-medium">Etapa para o Claude Code: {{ execucao.pendencia.titulo }}</p>
+    <p class="mt-1 whitespace-pre-wrap text-sm">{{ execucao.pendencia.instrucao }}</p>
+    <p class="mt-2 text-xs text-slate-600">Esperando o resultado pela sessão do Claude Code (concluir_etapa).</p>
+  </section>
+
+  <section v-else-if="execucao.status === 'aguardando'" class="mb-6 rounded border border-amber-300 bg-amber-50 p-4">
     <p class="mb-3 font-medium">{{ execucao.pendencia?.pergunta }}</p>
     <div class="flex gap-2">
       <button class="rounded bg-green-700 px-4 py-1.5 text-white" @click="decidir(true)">Aprovar</button>

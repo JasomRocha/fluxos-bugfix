@@ -11,7 +11,9 @@ class ExampleTest extends TestCase
 
     public function test_visitante_vai_para_o_login(): void
     {
+        $this->get('/')->assertRedirect('/login');
         $this->get('/fluxos')->assertRedirect('/login');
+        $this->get('/resolucoes')->assertRedirect('/login');
         $this->get('/login')->assertOk();
     }
 }
