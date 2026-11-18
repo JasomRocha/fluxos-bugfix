@@ -177,3 +177,40 @@ def test_chamada_repetida_recebe_aviso(tmp_path):
     rodar_agente(m, "x", criar_ferramentas(str(projeto(tmp_path))), insistencias=0)
     assert "AVISO" not in m.vistas[1][-1].content   # 1a vez: sem aviso
     assert "AVISO" in m.vistas[2][-1].content        # 2a vez igual: com aviso
+
+
+def test_provedor_openai_exige_chave_e_modelo(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_MODELO", raising=False)
+    try:
+        nos.criar_modelo({"provedor": "openai", "modelo": "x"})
+        assert False
+    except RuntimeError as e:
+        assert "OPENAI_API_KEY" in str(e)
+    monkeypatch.setenv("OPENAI_API_KEY", "chave-falsa-de-teste")
+    try:
+        nos.criar_modelo({"provedor": "openai"})
+        assert False
+    except RuntimeError as e:
+        assert "OPENAI_MODELO" in str(e)
+
+
+def test_provedor_openai_cria_o_modelo_sem_rede(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "chave-falsa-de-teste")
+    m = nos.criar_modelo({"provedor": "openai", "modelo": "modelo-qualquer"})
+    assert type(m).__name__ == "ChatOpenAI" and m.model_name == "modelo-qualquer"
+    assert "chave-falsa-de-teste" not in repr(m)  # a chave nao aparece na representacao
+
+
+def test_provedor_desconhecido_e_recusado():
+    try:
+        nos.criar_modelo({"provedor": "outro"})
+        assert False
+    except RuntimeError as e:
+        assert "desconhecido" in str(e)
+
+
+def test_provedor_padrao_continua_ollama(monkeypatch):
+    monkeypatch.delenv("MOTOR_PROVEDOR", raising=False)
+    monkeypatch.setenv("OLLAMA_MODELO", "qualquer")
+    assert type(nos.criar_modelo({})).__name__ == "ChatOllama"

@@ -51,7 +51,23 @@ def no_comando(config: dict):
 
 
 def criar_modelo(config: dict):
-    """Cria o modelo do Ollama. Os testes trocam esta funcao por um falso."""
+    """Cria o modelo do agente (Ollama ou OpenAI). Os testes trocam esta funcao por um falso."""
+    provedor = (config.get("provedor") or os.environ.get("MOTOR_PROVEDOR") or "ollama").lower()
+
+    if provedor == "openai":
+        from langchain_openai import ChatOpenAI
+
+        chave = os.environ.get("OPENAI_API_KEY")
+        if not chave:
+            raise RuntimeError("defina OPENAI_API_KEY no .env para usar o provedor openai")
+        nome = config.get("modelo") or os.environ.get("OPENAI_MODELO")
+        if not nome:
+            raise RuntimeError("defina OPENAI_MODELO ou 'modelo' na config do no")
+        return ChatOpenAI(model=nome, api_key=chave, temperature=0, max_retries=2, timeout=120)
+
+    if provedor != "ollama":
+        raise RuntimeError(f"provedor desconhecido: {provedor} (use ollama ou openai)")
+
     from langchain_ollama import ChatOllama
 
     nome = config.get("modelo") or os.environ.get("OLLAMA_MODELO")

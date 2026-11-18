@@ -13,6 +13,7 @@ export const TIPOS = {
     campos: [
       { chave: 'prompt', rotulo: 'Instrução', area: true, dica: 'Corrija o bug: {descricao}' },
       { chave: 'diretorio', rotulo: 'Diretório', dica: '{diretorio}' },
+      { chave: 'provedor', rotulo: 'Provedor (ollama ou openai; vazio = padrão do servidor)', dica: 'ollama' },
       { chave: 'modelo', rotulo: 'Modelo (vazio = padrão do servidor)', dica: 'qwen2.5-coder:14b' },
       { chave: 'max_turnos', rotulo: 'Máximo de turnos', numero: true },
     ],
