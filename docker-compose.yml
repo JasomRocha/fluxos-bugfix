@@ -1,0 +1,34 @@
+services:
+  motor:
+    build: ./engine
+    restart: unless-stopped
+    environment:
+      MOTOR_TOKEN: ${MOTOR_TOKEN:?defina MOTOR_TOKEN no .env}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GH_TOKEN: ${GH_TOKEN:-}
+    volumes:
+      - motor_dados:/dados
+      - trabalho:/trabalho
+    expose: ["8000"]   # so a rede interna enxerga o motor
+
+  laravel:
+    build: ./laravel
+    restart: unless-stopped
+    depends_on: [motor]
+    environment:
+      APP_NAME: Fluxos de correcao
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?defina APP_KEY no .env}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      MOTOR_URL: http://motor:8000
+      MOTOR_TOKEN: ${MOTOR_TOKEN}
+    ports:
+      - "${PORTA_WEB:-8080}:8080"
+    volumes:
+      - laravel_dados:/var/www/html/storage/dados
+
+volumes:
+  motor_dados:
+  trabalho:
+  laravel_dados:
