@@ -69,15 +69,16 @@ def no_agente(config: dict):
         dados = estado.get("dados", {})
         diretorio = preencher(config.get("diretorio", "."), dados)
         ferramentas = criar_ferramentas(diretorio, config.get("comandos_permitidos"))
-        resposta, concluido = rodar_agente(
+        resposta, resultado = rodar_agente(
             criar_modelo(config), preencher(config["prompt"], dados), ferramentas,
             max_turnos=config.get("max_turnos", 30),
+            insistencias=config.get("insistencias", 2),
         )
         chave = config.get("chave", "agente")
         return {
             "dados": {f"{chave}_resposta": resposta},
-            "rota": "ok" if concluido else "limite",
-            "historico": [f"{chave}: " + ("concluido" if concluido else "limite de turnos")],
+            "rota": resultado,
+            "historico": [f"{chave}: {resultado}"],
         }
 
     return executar

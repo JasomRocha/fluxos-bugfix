@@ -42,8 +42,8 @@ def test_agente_corrige_bug_com_ferramentas(tmp_path):
         AIMessage(content="Troquei a subtracao por soma."),
     ])
     ferr = criar_ferramentas(str(p), permitidos=[sys.executable])
-    resposta, ok = rodar_agente(m, "corrija", ferr)
-    assert ok and "soma" in resposta
+    resposta, res = rodar_agente(m, "corrija", ferr)
+    assert res == "ok" and "soma" in resposta
     assert "a + b" in (p / "calc.py").read_text()
     ultima_saida = m.vistas[-1][-1].content
     assert "codigo 0" in ultima_saida
@@ -92,14 +92,14 @@ def test_substituir_exige_trecho_unico(tmp_path):
 
 def test_limite_de_turnos(tmp_path):
     m = ModeloFalso([chamada("listar") for _ in range(3)])
-    _, ok = rodar_agente(m, "x", criar_ferramentas(str(projeto(tmp_path))), max_turnos=3)
-    assert ok is False
+    _, res = rodar_agente(m, "x", criar_ferramentas(str(projeto(tmp_path))), max_turnos=3)
+    assert res == "limite"
 
 
 def test_erro_de_ferramenta_volta_para_o_modelo(tmp_path):
     m = ModeloFalso([chamada("ler", caminho="../x"), AIMessage(content="ok")])
-    _, ok = rodar_agente(m, "x", criar_ferramentas(str(projeto(tmp_path))))
-    assert ok and "fora do projeto" in m.vistas[-1][-1].content
+    rodar_agente(m, "x", criar_ferramentas(str(projeto(tmp_path))), insistencias=0)
+    assert "fora do projeto" in m.vistas[1][-1].content
 
 
 def test_no_agente_dentro_de_um_fluxo(tmp_path, monkeypatch):
@@ -118,3 +118,62 @@ def test_no_agente_dentro_de_um_fluxo(tmp_path, monkeypatch):
     assert ex.estado["dados"]["agente_resposta"] == "feito"
     assert ex.estado["dados"]["comando_codigo"] == 0
     assert "Corrija soma" in falso.vistas[0][1].content
+
+
+def test_modelo_que_so_descreve_e_instigado_a_agir(tmp_path):
+    p = projeto(tmp_path)
+    m = ModeloFalso([
+        AIMessage(content="Vou buscar o codigo."),  # parou sem chamar ferramenta
+        chamada("substituir", caminho="calc.py", antigo="a - b", novo="a + b"),
+        AIMessage(content="corrigido"),
+    ])
+    _, res = rodar_agente(m, "x", criar_ferramentas(str(p)))
+    assert res == "ok" and "a + b" in (p / "calc.py").read_text()
+    assert "ainda nao alterou" in m.vistas[1][-1].content
+
+
+def test_sem_alteracao_apos_as_insistencias(tmp_path):
+    m = ModeloFalso([AIMessage(content="so conversa") for _ in range(3)])
+    _, res = rodar_agente(m, "x", criar_ferramentas(str(projeto(tmp_path))), insistencias=2)
+    assert res == "sem_alteracao"
+    assert m.respostas == []  # consumiu as 3 respostas: 1 inicial + 2 insistencias
+
+
+def test_substituir_que_falha_nao_conta_como_alteracao(tmp_path):
+    m = ModeloFalso([chamada("substituir", caminho="calc.py", antigo="inexistente", novo="x"),
+                     AIMessage(content="pronto")])
+    _, res = rodar_agente(m, "x", criar_ferramentas(str(projeto(tmp_path))), insistencias=0)
+    assert res == "sem_alteracao"
+
+
+def test_escrever_nao_cria_pastas_inventadas(tmp_path):
+    p = projeto(tmp_path)
+    ferr = {f.name: f for f in criar_ferramentas(str(p))}
+    assert ferr["escrever"].invoke({"caminho": "loja/precos.py", "conteudo": "x"}).startswith("erro")
+    assert not (p / "loja").exists()
+    assert ferr["escrever"].invoke({"caminho": "novo.py", "conteudo": "x"}) == "ok"
+
+
+def test_substituir_em_arquivo_inexistente_orienta(tmp_path):
+    ferr = {f.name: f for f in criar_ferramentas(str(projeto(tmp_path)))}
+    saida = ferr["substituir"].invoke({"caminho": "loja/x.py", "antigo": "a", "novo": "b"})
+    assert "nao existe" in saida and "listar" in saida
+
+
+def test_buscar_padrao_errado_orienta(tmp_path):
+    ferr = {f.name: f for f in criar_ferramentas(str(projeto(tmp_path)))}
+    assert "listar" in ferr["buscar"].invoke({"expressao": "soma", "padrao": "src"})
+    assert "calc.py:1" in ferr["buscar"].invoke({"expressao": "def soma"})
+
+
+def test_listar_sem_resultado_orienta(tmp_path):
+    ferr = {f.name: f for f in criar_ferramentas(str(projeto(tmp_path)))}
+    saida = ferr["listar"].invoke({"padrao": "tests/**/*_test.py"})
+    assert saida and "sem argumentos" in saida
+
+
+def test_chamada_repetida_recebe_aviso(tmp_path):
+    m = ModeloFalso([chamada("listar", padrao="x*"), chamada("listar", padrao="x*"), AIMessage(content="fim")])
+    rodar_agente(m, "x", criar_ferramentas(str(projeto(tmp_path))), insistencias=0)
+    assert "AVISO" not in m.vistas[1][-1].content   # 1a vez: sem aviso
+    assert "AVISO" in m.vistas[2][-1].content        # 2a vez igual: com aviso

@@ -44,5 +44,5 @@ export const ROTAS = {
   comando: ['ok', 'falha'],
   aprovacao: ['aprovado', 'recusado'],
   abrir_pr: ['ok', 'sem_alteracao'],
-  agente: ['ok', 'limite'],
+  agente: ['ok', 'limite', 'sem_alteracao'],
 };
