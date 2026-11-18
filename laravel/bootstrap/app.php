@@ -12,6 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // atras do Caddy e da Cloudflare: confia no X-Forwarded-Proto para gerar URLs https
+        $middleware->trustProxies(at: '*');
         $middleware->web(append: [\App\Http\Middleware\HandleInertiaRequests::class]);
         $middleware->redirectGuestsTo(fn () => route('login'));
     })

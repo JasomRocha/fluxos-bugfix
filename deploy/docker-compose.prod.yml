@@ -1,0 +1,22 @@
+# Acrescenta o Caddy (80/443) e fecha a porta 8080. Uso:
+#   docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml up -d --build
+services:
+  laravel:
+    ports: !reset []
+    environment:
+      APP_URL: https://${DOMINIO:?defina DOMINIO no .env}
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [laravel]
+    environment:
+      DOMINIO: ${DOMINIO}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /etc/fluxos/tls:/certs:ro
+      - caddy_dados:/data
+volumes:
+  caddy_dados:

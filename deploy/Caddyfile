@@ -1,0 +1,5 @@
+# TLS com o certificado de origem da Cloudflare (modo SSL "Full (strict)")
+{$DOMINIO} {
+	tls /certs/origin.pem /certs/origin.key
+	reverse_proxy laravel:8080
+}
