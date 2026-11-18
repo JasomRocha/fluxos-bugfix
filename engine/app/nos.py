@@ -46,34 +46,39 @@ def no_comando(config: dict):
     return executar
 
 
+def criar_modelo(config: dict):
+    """Cria o modelo do Ollama. Os testes trocam esta funcao por um falso."""
+    from langchain_ollama import ChatOllama
+
+    nome = config.get("modelo") or os.environ.get("OLLAMA_MODELO")
+    if not nome:
+        raise RuntimeError("defina OLLAMA_MODELO ou 'modelo' na config do no")
+    return ChatOllama(
+        model=nome,
+        base_url=os.environ.get("OLLAMA_URL", "http://host.docker.internal:11434"),
+        temperature=0,
+        num_ctx=config.get("contexto", 16384),
+    )
+
+
 def no_agente(config: dict):
-    """Chama o Claude pelo Agent SDK, com permissao restrita ao diretorio do projeto."""
+    """Agente de codigo com modelo local, preso ao diretorio do projeto."""
     def executar(estado: Estado):
-        try:
-            import anyio
-            from claude_agent_sdk import ClaudeAgentOptions, ResultMessage, query
-        except ImportError as e:
-            raise RuntimeError("instale o extra 'agente' (claude-agent-sdk)") from e
+        from .agente import criar_ferramentas, rodar_agente
 
         dados = estado.get("dados", {})
-        prompt = preencher(config["prompt"], dados)
-        opcoes = ClaudeAgentOptions(
-            cwd=preencher(config.get("diretorio", "."), dados),
-            allowed_tools=config.get("ferramentas", ["Read", "Grep", "Glob", "Edit", "Bash"]),
-            permission_mode="acceptEdits",
-            max_turns=config.get("max_turnos", 30),
+        diretorio = preencher(config.get("diretorio", "."), dados)
+        ferramentas = criar_ferramentas(diretorio, config.get("comandos_permitidos"))
+        resposta, concluido = rodar_agente(
+            criar_modelo(config), preencher(config["prompt"], dados), ferramentas,
+            max_turnos=config.get("max_turnos", 30),
         )
-
-        async def rodar():
-            texto = ""
-            async for msg in query(prompt=prompt, options=opcoes):
-                if isinstance(msg, ResultMessage):
-                    texto = msg.result or ""
-            return texto
-
-        resposta = anyio.run(rodar)
         chave = config.get("chave", "agente")
-        return {"dados": {f"{chave}_resposta": resposta}, "historico": [f"{chave}: concluido"]}
+        return {
+            "dados": {f"{chave}_resposta": resposta},
+            "rota": "ok" if concluido else "limite",
+            "historico": [f"{chave}: " + ("concluido" if concluido else "limite de turnos")],
+        }
 
     return executar
 

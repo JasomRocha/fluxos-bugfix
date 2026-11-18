@@ -9,10 +9,11 @@ export const TIPOS = {
     ],
   },
   agente: {
-    rotulo: 'Agente Claude',
+    rotulo: 'Agente de código',
     campos: [
       { chave: 'prompt', rotulo: 'Instrução', area: true, dica: 'Corrija o bug: {descricao}' },
       { chave: 'diretorio', rotulo: 'Diretório', dica: '{diretorio}' },
+      { chave: 'modelo', rotulo: 'Modelo (vazio = padrão do servidor)', dica: 'qwen2.5-coder:14b' },
       { chave: 'max_turnos', rotulo: 'Máximo de turnos', numero: true },
     ],
   },
@@ -43,4 +44,5 @@ export const ROTAS = {
   comando: ['ok', 'falha'],
   aprovacao: ['aprovado', 'recusado'],
   abrir_pr: ['ok', 'sem_alteracao'],
+  agente: ['ok', 'limite'],
 };

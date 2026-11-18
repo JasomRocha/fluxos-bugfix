@@ -4,11 +4,14 @@ services:
     restart: unless-stopped
     environment:
       MOTOR_TOKEN: ${MOTOR_TOKEN:?defina MOTOR_TOKEN no .env}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODELO: ${OLLAMA_MODELO:-}
       GH_TOKEN: ${GH_TOKEN:-}
     volumes:
       - motor_dados:/dados
       - trabalho:/trabalho
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     expose: ["8000"]   # so a rede interna enxerga o motor
 
   laravel:
