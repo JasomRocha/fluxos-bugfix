@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Execucao;
 use App\Models\Fluxo;
-use App\Services\Motor;
+use App\Services\Execucoes;
+use DomainException;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ExecucaoController extends Controller
 {
-    public function __construct(private Motor $motor) {}
+    public function __construct(private Execucoes $execucoes) {}
 
     public function store(Request $r, Fluxo $fluxo)
     {
@@ -18,17 +19,14 @@ class ExecucaoController extends Controller
         $dados = json_decode($dados, true);
         abort_unless(is_array($dados), 422, 'Dados devem ser um JSON de objeto.');
 
-        $execucao = $fluxo->execucoes()->create(['status' => 'executando', 'dados' => $dados]);
-        $this->aplicar($execucao, $this->motor->iniciar($fluxo->definicao, $dados));
+        $execucao = $this->execucoes->iniciar($fluxo, $dados);
 
         return redirect()->route('execucoes.show', $execucao);
     }
 
     public function show(Execucao $execucao)
     {
-        if ($execucao->motor_id && $execucao->emAndamento()) {
-            $this->aplicar($execucao, $this->motor->consultar($execucao->motor_id));
-        }
+        $this->execucoes->sincronizar($execucao);
 
         return Inertia::render('Execucoes/Show', ['execucao' => $execucao->load('fluxo:id,nome')]);
     }
@@ -36,21 +34,12 @@ class ExecucaoController extends Controller
     public function decisao(Request $r, Execucao $execucao)
     {
         $aprovado = $r->validate(['aprovado' => 'required|boolean'])['aprovado'];
-        abort_unless($execucao->status === 'aguardando', 409, 'A execucao nao aguarda decisao.');
-        $this->aplicar($execucao, $this->motor->decidir($execucao->motor_id, $aprovado));
+        try {
+            $this->execucoes->decidir($execucao, $aprovado);
+        } catch (DomainException $e) {
+            abort(409, $e->getMessage());
+        }
 
         return redirect()->route('execucoes.show', $execucao);
-    }
-
-    private function aplicar(Execucao $e, array $m): void
-    {
-        $e->update([
-            'motor_id' => $m['id'],
-            'status' => $m['status'],
-            'pendencia' => $m['pendencia'] ?? null,
-            'erro' => $m['erro'] ?? null,
-            'dados' => $m['dados'] ?: $e->dados,
-            'historico' => $m['historico'] ?? [],
-        ]);
     }
 }

@@ -58,8 +58,8 @@ class FluxoController extends Controller
     {
         $dados = $r->validate(['nome' => 'required|string|max:120', 'definicao' => 'required|string']);
         $def = json_decode($dados['definicao'], true);
-        if (! is_array($def) || empty($def['nos']) || empty($def['inicio'])) {
-            abort(422, 'Definicao invalida: informe "inicio" e "nos".');
+        if ($erro = Fluxo::erroDaDefinicao($def)) {
+            abort(422, 'Definicao invalida: '.$erro);
         }
 
         return ['nome' => $dados['nome'], 'definicao' => $def];

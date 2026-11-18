@@ -36,6 +36,10 @@ return [
     ],
 
 
+    'mcp' => [
+        'token' => env('MCP_TOKEN'),
+    ],
+
     'motor' => [
         'url' => env('MOTOR_URL', 'http://motor:8000'),
         'token' => env('MOTOR_TOKEN'),

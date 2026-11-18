@@ -26,6 +26,7 @@ services:
       APP_URL: ${APP_URL:-http://localhost:8080}
       MOTOR_URL: http://motor:8000
       MOTOR_TOKEN: ${MOTOR_TOKEN}
+      MCP_TOKEN: ${MCP_TOKEN:-}
     ports:
       - "${PORTA_WEB:-8080}:8080"
     volumes:
